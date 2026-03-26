@@ -1,9 +1,13 @@
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-from database import get_balance
 
-async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    balance = get_balance(user_id)
+wallet_menu_buttons = [
+    ["💰 رصيدي", "💳 سحب الأرباح"],
+    ["🔙 رجوع"]
+]
 
-    await update.message.reply_text(f"💰 رصيدك: {balance}")
+async def wallet_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "💼 المحفظة:",
+        reply_markup=ReplyKeyboardMarkup(wallet_menu_buttons, resize_keyboard=True)
+    )
