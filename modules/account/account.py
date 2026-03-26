@@ -1,13 +1,16 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from database import get_join_date
+from modules.account.account_db import get_user_data
 
 async def account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    join_date = get_join_date(user_id)
+    user = get_user_data(user_id)
 
-    # تقسيم التاريخ والوقت
-    date, time = join_date.split(" ")
+    if user:
+        user_id, join_date = user
+        date, time = join_date.split(" ")
+    else:
+        date, time = "غير معروف", "غير معروف"
 
     await update.message.reply_text(
         f"👤 حسابك:\n\n"
