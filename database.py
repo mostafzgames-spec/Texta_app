@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 conn = sqlite3.connect("bot.db", check_same_thread=False)
 cursor = conn.cursor()
@@ -8,7 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY,
     balance INTEGER DEFAULT 0,
     last_daily INTEGER DEFAULT 0,
-    invited_by INTEGER
+    invited_by INTEGER,
+    join_date TEXT
 )
 """)
 conn.commit()
@@ -17,9 +19,11 @@ conn.commit()
 def add_user(user_id, invited_by=None):
     cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
     if not cursor.fetchone():
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         cursor.execute(
-            "INSERT INTO users (id, balance, last_daily, invited_by) VALUES (?, 0, 0, ?)",
-            (user_id, invited_by)
+            "INSERT INTO users (id, balance, last_daily, invited_by, join_date) VALUES (?, 0, 0, ?, ?)",
+            (user_id, invited_by, now)
         )
         conn.commit()
 
@@ -55,3 +59,8 @@ def update_daily(user_id, time):
         (time, user_id)
     )
     conn.commit()
+
+
+def get_join_date(user_id):
+    cursor.execute("SELECT join_date FROM users WHERE id=?", (user_id,))
+    return cursor.fetchone()[0]
