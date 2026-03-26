@@ -5,7 +5,9 @@ from database import add_user
 main_menu = [
     ["👤 حسابي", "💼 محفظة"],
     ["🔗 دعوة أصدقاء", "🎁 مهام"],
-    ["🎉 مكافأة يومية"]
+    ["🎉 مكافأة يومية"],
+    ["☎️ خدمة العملاء", "📜 سجلاتي"],
+    ["🏆 المتصدرين"]
 ]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
