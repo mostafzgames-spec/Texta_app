@@ -1,10 +1,19 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import os
 
 TOKEN = os.getenv("TOKEN")
 
 users = {}
+
+# القائمة الرئيسية
+main_menu = [
+    ["👤 حسابي", "💼 محفظة"],
+    ["🔗 دعوة أصدقاء", "🎁 مهام"],
+    ["🎉 مكافأة يومية"]
+]
+
+reply_markup = ReplyKeyboardMarkup(main_menu, resize_keyboard=True)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -12,34 +21,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id not in users:
         users[user_id] = {"balance": 0}
 
-    keyboard = [
-        [InlineKeyboardButton("👤 حسابي", callback_data="account")],
-        [InlineKeyboardButton("💰 رصيدي", callback_data="balance")],
-        [InlineKeyboardButton("🔗 دعوة أصدقاء", callback_data="ref")]
-    ]
+    await update.message.reply_text(
+        "أهلاً بك في بوت Mafhumatk 👋",
+        reply_markup=reply_markup
+    )
 
-    await update.message.reply_text("أهلا بيك 👋", reply_markup=InlineKeyboardMarkup(keyboard))
+# التعامل مع الأزرار
+async def menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    user_id = update.effective_user.id
 
+    if text == "👤 حسابي":
+        await update.message.reply_text(f"🆔 ID: {user_id}")
 
-async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    await query.answer()
+    elif text == "💼 محفظة":
+        balance = users[user_id]["balance"]
+        await update.message.reply_text(f"💰 رصيدك: {balance}")
 
-    if query.data == "account":
-        await query.message.reply_text(f"🆔 ID: {user_id}")
+    elif text == "🔗 دعوة أصدقاء":
+        link = f"https://t.me/Mafhumatk_bot?start={user_id}"
+        await update.message.reply_text(f"🔗 رابط الدعوة:\n{link}")
 
-    elif query.data == "balance":
-        await query.message.reply_text(f"💰 رصيدك: {users[user_id]['balance']}")
+    elif text == "🎁 مهام":
+        await update.message.reply_text("📌 قريباً سيتم إضافة مهام")
 
-    elif query.data == "ref":
-        link = f"https://t.me/YOUR_BOT_USERNAME?start={user_id}"
-        await query.message.reply_text(f"🔗 رابط الدعوة:\n{link}")
-
+    elif text == "🎉 مكافأة يومية":
+        users[user_id]["balance"] += 5
+        await update.message.reply_text("🎉 تم إضافة 5 نقاط لرصيدك")
 
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(buttons))
+app.add_handler(MessageHandler(filters.TEXT, menu_handler))
 
 app.run_polling()
