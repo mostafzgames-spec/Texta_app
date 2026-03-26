@@ -1,8 +1,11 @@
 import os
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
+# استيراد من الموديولات
+from modules.account.account import account
+
+# باقي القوائم (لسه handlers مؤقتًا)
 from handlers.start import start
-from handlers.account import account
 from handlers.wallet import wallet_menu
 from handlers.referral import referral
 from handlers.tasks import tasks
@@ -20,8 +23,10 @@ TOKEN = os.getenv("TOKEN")
 
 app = ApplicationBuilder().token(TOKEN).build()
 
+# start
 app.add_handler(CommandHandler("start", start))
 
+# القوائم الأساسية
 app.add_handler(MessageHandler(filters.Regex("👤 حسابي"), account))
 app.add_handler(MessageHandler(filters.Regex("💼 محفظة"), wallet_menu))
 app.add_handler(MessageHandler(filters.Regex("📊 إحصائياتي"), stats))
