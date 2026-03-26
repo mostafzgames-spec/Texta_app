@@ -3,13 +3,18 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 from handlers.start import start
 from handlers.account import account
-from handlers.wallet import wallet
+from handlers.wallet import wallet_menu
 from handlers.referral import referral
 from handlers.tasks import tasks
 from handlers.daily import daily
 from handlers.support import support
 from handlers.logs import logs
 from handlers.leaderboard import leaderboard
+from handlers.stats import stats
+from handlers.channel import channel
+from handlers.offers import offers
+from handlers.withdraw import withdraw
+from handlers.balance import balance
 
 TOKEN = os.getenv("TOKEN")
 
@@ -18,12 +23,19 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 
 app.add_handler(MessageHandler(filters.Regex("👤 حسابي"), account))
-app.add_handler(MessageHandler(filters.Regex("💼 محفظة"), wallet))
+app.add_handler(MessageHandler(filters.Regex("💼 محفظة"), wallet_menu))
+app.add_handler(MessageHandler(filters.Regex("📊 إحصائياتي"), stats))
 app.add_handler(MessageHandler(filters.Regex("🔗 دعوة أصدقاء"), referral))
 app.add_handler(MessageHandler(filters.Regex("🎁 مهام"), tasks))
 app.add_handler(MessageHandler(filters.Regex("🎉 مكافأة يومية"), daily))
+app.add_handler(MessageHandler(filters.Regex("📢 قناتنا"), channel))
+app.add_handler(MessageHandler(filters.Regex("🎁 العروض"), offers))
 app.add_handler(MessageHandler(filters.Regex("☎️ خدمة العملاء"), support))
-app.add_handler(MessageHandler(filters.Regex("📜 سجلاتي"), logs))
+app.add_handler(MessageHandler(filters.Regex("📜 السجلات"), logs))
 app.add_handler(MessageHandler(filters.Regex("🏆 المتصدرين"), leaderboard))
+
+# داخل المحفظة
+app.add_handler(MessageHandler(filters.Regex("💰 رصيدي"), balance))
+app.add_handler(MessageHandler(filters.Regex("💳 سحب الأرباح"), withdraw))
 
 app.run_polling()
