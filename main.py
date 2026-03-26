@@ -1,10 +1,14 @@
 import os
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-# استيراد من الموديولات
+# تشغيل إنشاء الجداول
+from init_db import create_tables
+create_tables()
+
+# الموديولات الجديدة
 from modules.account.account import account
 
-# باقي القوائم (لسه handlers مؤقتًا)
+# باقي القوائم (لسه في handlers مؤقتًا)
 from handlers.start import start
 from handlers.wallet import wallet_menu
 from handlers.referral import referral
@@ -23,7 +27,7 @@ TOKEN = os.getenv("TOKEN")
 
 app = ApplicationBuilder().token(TOKEN).build()
 
-# start
+# أمر البداية
 app.add_handler(CommandHandler("start", start))
 
 # القوائم الأساسية
