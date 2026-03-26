@@ -4,15 +4,15 @@ from database import add_user
 
 main_menu = [
     ["👤 حسابي", "💼 محفظة"],
-    ["🔗 دعوة أصدقاء", "🎁 مهام"],
-    ["🎉 مكافأة يومية"],
-    ["☎️ خدمة العملاء", "📜 سجلاتي"],
+    ["📊 إحصائياتي", "🎁 مهام"],
+    ["🔗 دعوة أصدقاء", "🎉 مكافأة يومية"],
+    ["📢 قناتنا", "🎁 العروض"],
+    ["☎️ خدمة العملاء", "📜 السجلات"],
     ["🏆 المتصدرين"]
 ]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-
     invited_by = int(context.args[0]) if context.args else None
 
     add_user(user_id, invited_by)
