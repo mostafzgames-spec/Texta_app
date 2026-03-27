@@ -1,17 +1,17 @@
 import os
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-# تشغيل إنشاء الجداول
+# إنشاء الجداول
 from init_db import create_tables
 create_tables()
 
 # الموديولات الجديدة
 from modules.account.account import account
+from modules.referral.referral import referral
 
-# باقي القوائم (لسه في handlers مؤقتًا)
+# باقي القوائم (لسه handlers مؤقتًا)
 from handlers.start import start
 from handlers.wallet import wallet_menu
-from handlers.referral import referral
 from handlers.tasks import tasks
 from handlers.daily import daily
 from handlers.support import support
