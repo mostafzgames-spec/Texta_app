@@ -1,35 +1,38 @@
-from database import cursor, conn
+from database import get_connection
 
 def create_tables():
+    conn = get_connection()
+    cur = conn.cursor()
 
-    # جدول المستخدمين
-    cursor.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
+        user_id BIGINT PRIMARY KEY,
         balance INTEGER DEFAULT 0,
-        last_daily INTEGER DEFAULT 0,
-        invited_by INTEGER,
-        join_date TEXT
-    )
+        referrer_id BIGINT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """)
 
-    # جدول تنفيذ المهام (مرة يوميًا)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS task_done (
-        user_id INTEGER,
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title TEXT,
+        description TEXT,
+        link TEXT,
+        reward INTEGER
+    );
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_tasks (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT,
         task_id INTEGER,
-        last_time INTEGER,
-        PRIMARY KEY (user_id, task_id)
-    )
-    """)
-
-    # جدول الفاصل بين المهام (3 دقائق)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS user_last_task (
-        user_id INTEGER PRIMARY KEY,
-        last_time INTEGER
-    )
+        last_done TIMESTAMP,
+        UNIQUE(user_id, task_id)
+    );
     """)
 
     conn.commit()
-    print("✅ Database Ready")
+    cur.close()
+    conn.close()
