@@ -12,29 +12,38 @@ from modules.referral.referral_db import add_referral_profit
 
 import time
 
-# حفظ وقت بدء المهمة (لـ 20 ثانية)
+# حفظ وقت بدء المهمة
 user_start_time = {}
 
+
+# 🟢 عرض المهام (كل مهمة رسالة لوحدها)
 async def tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = "🎁 المهام المتاحة:\n\n"
-    keyboard = []
 
     for i, task in enumerate(tasks_list, start=1):
-        text += f"{i}- {task['name']}\n{task['desc']}\n💰 {task['reward']} نقاط\n\n"
 
-        keyboard.append([
-            InlineKeyboardButton(
-                f"ابدأ المهمة {i}",
-                callback_data=f"start_{task['id']}"
-            )
-        ])
+        text = (
+            f"📢 المهمة {i}\n\n"
+            f"📌 {task['name']}\n"
+            f"📝 {task['desc']}\n\n"
+            f"💰 {task['reward']} نقاط"
+        )
 
-    await update.message.reply_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "ابدأ المهمة",
+                    callback_data=f"start_{task['id']}"
+                )
+            ]
+        ]
+
+        await update.message.reply_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
 
 
+# 🟢 التعامل مع الأزرار
 async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -46,12 +55,12 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("start_"):
         task_id = int(data.split("_")[1])
 
-        # منع 3 دقائق
+        # فاصل 3 دقائق
         if not can_do_new_task(user_id):
             await query.message.reply_text("⏳ لازم تستنى 3 دقائق قبل المهمة التالية")
             return
 
-        # منع تكرار يومي
+        # مرة يوميًا
         if not can_do_task(user_id, task_id):
             await query.message.reply_text("❌ عملت المهمة دي النهارده")
             return
@@ -66,7 +75,7 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_start_time[user_id] = int(time.time())
 
         await query.message.reply_text(
-            f"📢 {task['name']}\n{task['desc']}\n\n⏳ انتظر 20 ثانية ثم اضغط تم التنفيذ",
+            f"📢 {task['name']}\n\n{task['desc']}\n\n⏳ انتظر 20 ثانية ثم اضغط تم التنفيذ",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
@@ -94,10 +103,10 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # أرباح الدعوة
         add_referral_profit(user_id, task["reward"])
 
-        # حفظ التنفيذ
+        # حفظ المهمة
         save_task(user_id, task_id)
 
-        # تحديث وقت آخر مهمة
+        # تحديث آخر وقت
         update_last_task_time(user_id)
 
         del user_start_time[user_id]
