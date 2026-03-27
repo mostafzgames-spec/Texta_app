@@ -1,5 +1,5 @@
 import os
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
 # إنشاء الجداول
 from init_db import create_tables
@@ -8,11 +8,11 @@ create_tables()
 # الموديولات الجديدة
 from modules.account.account import account
 from modules.referral.referral import referral
+from modules.tasks.tasks import tasks, handle_task
 
-# باقي القوائم (لسه handlers مؤقتًا)
+# باقي القوائم
 from handlers.start import start
 from handlers.wallet import wallet_menu
-from handlers.tasks import tasks
 from handlers.daily import daily
 from handlers.support import support
 from handlers.logs import logs
@@ -46,5 +46,8 @@ app.add_handler(MessageHandler(filters.Regex("🏆 المتصدرين"), leaderb
 # داخل المحفظة
 app.add_handler(MessageHandler(filters.Regex("💰 رصيدي"), balance))
 app.add_handler(MessageHandler(filters.Regex("💳 سحب الأرباح"), withdraw))
+
+# نظام المهام (الأزرار التفاعلية)
+app.add_handler(CallbackQueryHandler(handle_task))
 
 app.run_polling()
