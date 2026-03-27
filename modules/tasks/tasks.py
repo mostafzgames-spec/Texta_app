@@ -12,6 +12,7 @@ from modules.referral.referral_db import add_referral_profit
 
 import time
 
+# حفظ وقت بدء المهمة
 user_start_time = {}
 
 
@@ -52,10 +53,12 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("start_"):
         task_id = int(data.split("_")[1])
 
+        # منع 3 دقائق
         if not can_do_new_task(user_id):
             await query.message.reply_text("⏳ لازم تستنى 3 دقائق قبل المهمة التالية")
             return
 
+        # منع التكرار اليومي
         if not can_do_task(user_id, task_id):
             await query.message.reply_text("❌ عملت المهمة دي النهارده")
             return
@@ -71,7 +74,8 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await query.message.reply_text(
             f"📢 {task['name']}\n\n"
-            f"📝 {task['desc']}\n\n"
+            f"📝 {task['desc']}\n"
+            f"💰 عدد النقاط: {task['reward']}\n\n"
             f"⏳ انتظر 20 ثانية ثم اضغط تم التنفيذ",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -87,15 +91,23 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         start_time = user_start_time[user_id]
         now = int(time.time())
 
+        # شرط 20 ثانية
         if now - start_time < 20:
             await query.message.reply_text("❌ لازم تنتظر 20 ثانية")
             return
 
         task = next(t for t in tasks_list if t["id"] == task_id)
 
+        # إضافة النقاط
         add_balance(user_id, task["reward"])
+
+        # أرباح الدعوة
         add_referral_profit(user_id, task["reward"])
+
+        # حفظ التنفيذ
         save_task(user_id, task_id)
+
+        # تحديث وقت آخر مهمة
         update_last_task_time(user_id)
 
         del user_start_time[user_id]
