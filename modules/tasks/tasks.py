@@ -12,20 +12,17 @@ from modules.referral.referral_db import add_referral_profit
 
 import time
 
-# حفظ وقت بدء المهمة
 user_start_time = {}
 
 
-# 🟢 عرض المهام (كل مهمة رسالة لوحدها)
+# 🟢 عرض المهام (مختصر)
 async def tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for i, task in enumerate(tasks_list, start=1):
 
         text = (
-            f"📢 المهمة {i}\n\n"
-            f"📌 {task['name']}\n"
-            f"📝 {task['desc']}\n\n"
-            f"💰 {task['reward']} نقاط"
+            f"📢 مهمة {i} | 💰 {task['reward']} نقاط\n"
+            f"📌 {task['name']}"
         )
 
         keyboard = [
@@ -51,16 +48,14 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     data = query.data
 
-    # 🔹 بدء المهمة
+    # 🔹 بدء المهمة (عرض التفاصيل)
     if data.startswith("start_"):
         task_id = int(data.split("_")[1])
 
-        # فاصل 3 دقائق
         if not can_do_new_task(user_id):
             await query.message.reply_text("⏳ لازم تستنى 3 دقائق قبل المهمة التالية")
             return
 
-        # مرة يوميًا
         if not can_do_task(user_id, task_id):
             await query.message.reply_text("❌ عملت المهمة دي النهارده")
             return
@@ -75,7 +70,9 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_start_time[user_id] = int(time.time())
 
         await query.message.reply_text(
-            f"📢 {task['name']}\n\n{task['desc']}\n\n⏳ انتظر 20 ثانية ثم اضغط تم التنفيذ",
+            f"📢 {task['name']}\n\n"
+            f"📝 {task['desc']}\n\n"
+            f"⏳ انتظر 20 ثانية ثم اضغط تم التنفيذ",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
@@ -90,25 +87,17 @@ async def handle_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         start_time = user_start_time[user_id]
         now = int(time.time())
 
-        # شرط 20 ثانية
         if now - start_time < 20:
-            await query.message.reply_text("❌ لازم تنتظر 20 ثانية قبل إنهاء المهمة")
+            await query.message.reply_text("❌ لازم تنتظر 20 ثانية")
             return
 
         task = next(t for t in tasks_list if t["id"] == task_id)
 
-        # إضافة النقاط
         add_balance(user_id, task["reward"])
-
-        # أرباح الدعوة
         add_referral_profit(user_id, task["reward"])
-
-        # حفظ المهمة
         save_task(user_id, task_id)
-
-        # تحديث آخر وقت
         update_last_task_time(user_id)
 
         del user_start_time[user_id]
 
-        await query.message.reply_text("✅ تم إضافة النقاط بنجاح")
+        await query.message.reply_text("✅ تم إضافة النقاط")
