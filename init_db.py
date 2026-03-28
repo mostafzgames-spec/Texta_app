@@ -4,6 +4,7 @@ def create_tables():
     conn = get_connection()
     cur = conn.cursor()
 
+    # users
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id BIGINT PRIMARY KEY,
@@ -13,6 +14,7 @@ def create_tables():
     );
     """)
 
+    # tasks
     cur.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
@@ -23,13 +25,13 @@ def create_tables():
     );
     """)
 
+    # user_tasks
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_tasks (
-        id SERIAL PRIMARY KEY,
         user_id BIGINT,
         task_id INTEGER,
         last_done TIMESTAMP,
-        UNIQUE(user_id, task_id)
+        PRIMARY KEY (user_id, task_id)
     );
     """)
 
