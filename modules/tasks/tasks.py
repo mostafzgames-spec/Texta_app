@@ -76,15 +76,18 @@ def register_tasks(bot):
         VALUES (%s, %s, NOW())
         """, (user_id, task_id))
 
-        # إضافة نقاط
-        cur.execute("""
-        UPDATE users
-        SET balance = balance + %s
-        WHERE user_id = %s
-        """, (reward, user_id))
+# إضافة نقاط
+cur.execute("""
+UPDATE users
+SET balance = balance + %s
+WHERE user_id = %s
+""", (reward, user_id))
 
-        conn.commit()
-        cur.close()
-        conn.close()
+conn.commit()
+cur.close()
+conn.close()
 
-        bot.send_message(message.chat.id, f"✅ تم تنفيذ المهمة\n💰 +{reward} نقطة")        )
+bot.send_message(
+    message.chat.id,
+    f"✅ تم تنفيذ المهمة\n💰 +{reward} نقطة"
+)
