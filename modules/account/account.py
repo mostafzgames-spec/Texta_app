@@ -1,20 +1,19 @@
-from telegram import Update
-from telegram.ext import ContextTypes
-from modules.account.account_db import get_user_data
+from .account_db import create_user, get_user
 
-async def account(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    user = get_user_data(user_id)
+def register_account(bot):
 
-    if user:
-        user_id, join_date = user
-        date, time = join_date.split(" ")
-    else:
-        date, time = "غير معروف", "غير معروف"
+    @bot.message_handler(commands=['start'])
+    def start(message):
+        user_id = message.from_user.id
+        create_user(user_id)
 
-    await update.message.reply_text(
-        f"👤 حسابك:\n\n"
-        f"🆔 ID: {user_id}\n\n"
-        f"📅 التاريخ: {date}\n"
-        f"🕒 الوقت: {time}"
-    )
+        bot.send_message(message.chat.id, "👋 أهلا بك")
+
+    @bot.message_handler(func=lambda msg: msg.text == "حسابي")
+    def account(message):
+        user = get_user(message.from_user.id)
+
+        bot.send_message(
+            message.chat.id,
+            f"🆔 ID: {user[0]}\n💰 رصيدك: {user[1]}"
+        )
