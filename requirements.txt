@@ -1,2 +1,2 @@
-python-telegram-bot
-pytz
+pyTelegramBotAPI
+psycopg2-binary
