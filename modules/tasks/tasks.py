@@ -1,37 +1,90 @@
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from .tasks_db import get_tasks, get_task
+from database import get_connection
+import time
+
+last_click = {}
 
 def register_tasks(bot):
 
-    @bot.message_handler(func=lambda msg: msg.text == "مهام")
-    def tasks(message):
-        tasks = get_tasks()
+    # عرض المهام
+    @bot.message_handler(commands=['tasks'])
+    def show_tasks(message):
+        user_id = message.from_user.id
 
-        for t in tasks:
-            markup = InlineKeyboardMarkup()
-            markup.add(
-                InlineKeyboardButton(
-                    "ابدأ المهمة",
-                    callback_data=f"task_{t[0]}"
-                )
-            )
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT id, title, description, link, reward FROM tasks")
+        tasks = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        if not tasks:
+            bot.send_message(message.chat.id, "❌ لا توجد مهام حالياً")
+            return
+
+        for task in tasks:
+            task_id, title, desc, link, reward = task
 
             bot.send_message(
                 message.chat.id,
-                f"📌 {t[1]}\n💰 {t[2]} نقطة",
-                reply_markup=markup
+                f"📌 {title}\n\n"
+                f"{desc}\n\n"
+                f"🔗 {link}\n"
+                f"💰 {reward} نقطة\n\n"
+                f"اضغط:\n/starttask_{task_id}"
             )
 
-    @bot.callback_query_handler(func=lambda call: call.data.startswith("task_"))
-    def start_task(call):
-        task_id = int(call.data.split("_")[1])
-        task = get_task(task_id)
+    # بدء المهمة
+    @bot.message_handler(func=lambda m: m.text.startswith("/starttask_"))
+    def start_task(message):
+        user_id = message.from_user.id
+        task_id = int(message.text.split("_")[1])
 
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("فتح الإعلان", url=task[3]))
+        now = time.time()
 
-        bot.send_message(
-            call.message.chat.id,
-            f"{task[1]}\n\n{task[2]}\n💰 {task[4]} نقطة",
-            reply_markup=markup
-        )
+        # ⛔ منع تنفيذ مهمة كل 3 دقائق
+        if user_id in last_click:
+            if now - last_click[user_id] < 180:
+                bot.send_message(message.chat.id, "⏳ استنى 3 دقائق بين كل مهمة")
+                return
+
+        last_click[user_id] = now
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # منع التكرار
+        cur.execute("""
+        SELECT * FROM user_tasks
+        WHERE user_id = %s AND task_id = %s
+        """, (user_id, task_id))
+
+        if cur.fetchone():
+            bot.send_message(message.chat.id, "❌ نفذت المهمة قبل كده")
+            cur.close()
+            conn.close()
+            return
+
+        # جلب النقاط
+        cur.execute("SELECT reward FROM tasks WHERE id = %s", (task_id,))
+        reward = cur.fetchone()[0]
+
+        # تسجيل التنفيذ
+        cur.execute("""
+        INSERT INTO user_tasks (user_id, task_id, last_done)
+        VALUES (%s, %s, NOW())
+        """, (user_id, task_id))
+
+        # إضافة نقاط
+        cur.execute("""
+        UPDATE users
+        SET balance = balance + %s
+        WHERE user_id = %s
+        """, (reward, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        bot.send_message(message.chat.id, f"✅ تم تنفيذ المهمة\n💰 +{reward} نقطة")        )
