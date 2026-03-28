@@ -4,7 +4,7 @@ def create_tables():
     conn = get_connection()
     cur = conn.cursor()
 
-    # users
+    # جدول المستخدمين
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id BIGINT PRIMARY KEY,
@@ -14,7 +14,7 @@ def create_tables():
     );
     """)
 
-    # tasks
+    # جدول المهام
     cur.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
@@ -25,7 +25,7 @@ def create_tables():
     );
     """)
 
-    # user_tasks
+    # تنفيذ المهام (منع التكرار)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_tasks (
         user_id BIGINT,
