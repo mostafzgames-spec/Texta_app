@@ -1,11 +1,12 @@
 from database import get_connection
 import time
 
+# تخزين وقت آخر مهمة لكل مستخدم
 last_click = {}
 
 def register_tasks(bot):
 
-    # عرض المهام
+    # 📌 عرض المهام
     @bot.message_handler(commands=['tasks'])
     def show_tasks(message):
         user_id = message.from_user.id
@@ -23,6 +24,7 @@ def register_tasks(bot):
             bot.send_message(message.chat.id, "❌ لا توجد مهام حالياً")
             return
 
+        # كل مهمة رسالة لوحدها
         for task in tasks:
             task_id, title, desc, link, reward = task
 
@@ -32,10 +34,10 @@ def register_tasks(bot):
                 f"{desc}\n\n"
                 f"🔗 {link}\n"
                 f"💰 {reward} نقطة\n\n"
-                f"اضغط:\n/starttask_{task_id}"
+                f"▶️ لبدء المهمة:\n/starttask_{task_id}"
             )
 
-    # بدء المهمة
+    # ▶️ بدء المهمة
     @bot.message_handler(func=lambda m: m.text.startswith("/starttask_"))
     def start_task(message):
         user_id = message.from_user.id
@@ -43,7 +45,7 @@ def register_tasks(bot):
 
         now = time.time()
 
-        # ⛔ منع تنفيذ مهمة كل 3 دقائق
+        # ⛔ فاصل 3 دقائق
         if user_id in last_click:
             if now - last_click[user_id] < 180:
                 bot.send_message(message.chat.id, "⏳ استنى 3 دقائق بين كل مهمة")
@@ -54,9 +56,9 @@ def register_tasks(bot):
         conn = get_connection()
         cur = conn.cursor()
 
-        # منع التكرار
+        # ❌ منع التكرار
         cur.execute("""
-        SELECT * FROM user_tasks
+        SELECT 1 FROM user_tasks
         WHERE user_id = %s AND task_id = %s
         """, (user_id, task_id))
 
@@ -66,28 +68,38 @@ def register_tasks(bot):
             conn.close()
             return
 
-        # جلب النقاط
-        cur.execute("SELECT reward FROM tasks WHERE id = %s", (task_id,))
-        reward = cur.fetchone()[0]
+        # 💰 جلب النقاط
+        cur.execute("""
+        SELECT reward FROM tasks WHERE id = %s
+        """, (task_id,))
+        result = cur.fetchone()
 
-        # تسجيل التنفيذ
+        if not result:
+            bot.send_message(message.chat.id, "❌ المهمة غير موجودة")
+            cur.close()
+            conn.close()
+            return
+
+        reward = result[0]
+
+        # 📝 تسجيل التنفيذ
         cur.execute("""
         INSERT INTO user_tasks (user_id, task_id, last_done)
         VALUES (%s, %s, NOW())
         """, (user_id, task_id))
 
-# إضافة نقاط
-cur.execute("""
-UPDATE users
-SET balance = balance + %s
-WHERE user_id = %s
-""", (reward, user_id))
+        # ➕ إضافة النقاط
+        cur.execute("""
+        UPDATE users
+        SET balance = balance + %s
+        WHERE user_id = %s
+        """, (reward, user_id))
 
-conn.commit()
-cur.close()
-conn.close()
+        conn.commit()
+        cur.close()
+        conn.close()
 
-bot.send_message(
-    message.chat.id,
-    f"✅ تم تنفيذ المهمة\n💰 +{reward} نقطة"
-)
+        bot.send_message(
+            message.chat.id,
+            f"✅ تم تنفيذ المهمة\n💰 +{reward} نقطة"
+        )
