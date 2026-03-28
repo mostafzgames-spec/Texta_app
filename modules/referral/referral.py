@@ -1,12 +1,11 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+def register_referral(bot):
 
-async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+    @bot.message_handler(func=lambda msg: msg.text == "دعوة أصدقاء")
+    def ref(message):
+        user_id = message.from_user.id
+        link = f"https://t.me/YOUR_BOT?start={user_id}"
 
-    link = f"https://t.me/Mafhumatk_bot?start={user_id}"
-
-    await update.message.reply_text(
-        f"🔗 رابط الدعوة الخاص بك:\n\n{link}\n\n"
-        f"💰 اربح 30٪ من أرباح كل صديق تدعوه"
-    )
+        bot.send_message(
+            message.chat.id,
+            f"رابطك:\n{link}"
+        )
