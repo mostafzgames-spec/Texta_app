@@ -5,7 +5,7 @@ def register_add_task(bot):
 
     data = {}
 
-    # ✅ START
+    # START
     @bot.message_handler(commands=['start'])
     def start_admin(message):
         if message.from_user.id != ADMIN_ID:
@@ -14,12 +14,11 @@ def register_add_task(bot):
 
         bot.send_message(
             message.chat.id,
-            "👑 مرحبا بك في بوت الادمن\n\n"
-            "📌 الأوامر:\n"
-            "/addtask - إضافة مهمة"
+            "👑 اهلا بيك في بوت الادمن\n\n"
+            "/addtask - اضافة مهمة"
         )
 
-    # ✅ ADD TASK
+    # بدء اضافة مهمة
     @bot.message_handler(commands=['addtask'])
     def add_task_start(message):
         if message.from_user.id != ADMIN_ID:
@@ -35,12 +34,12 @@ def register_add_task(bot):
 
     def get_desc(message):
         data[message.chat.id]["description"] = message.text
-        bot.send_message(message.chat.id, "🔗 اكتب رابط المهمة:")
+        bot.send_message(message.chat.id, "🔗 اكتب الرابط:")
         bot.register_next_step_handler(message, get_link)
 
     def get_link(message):
         data[message.chat.id]["link"] = message.text
-        bot.send_message(message.chat.id, "💰 اكتب عدد النقاط:")
+        bot.send_message(message.chat.id, "💰 اكتب النقاط:")
         bot.register_next_step_handler(message, get_reward)
 
     def get_reward(message):
@@ -64,4 +63,4 @@ def register_add_task(bot):
         cur.close()
         conn.close()
 
-        bot.send_message(message.chat.id, "✅ تم إضافة المهمة بنجاح")
+        bot.send_message(message.chat.id, "✅ تم إضافة المهمة")
