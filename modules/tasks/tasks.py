@@ -3,20 +3,23 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
 from datetime import datetime
 
+# تخزين وقت بداية المهمة
 user_task_time = {}
 
 def register_tasks(bot):
 
     # 📌 عرض المهام
-    @bot.message_handler(func=lambda msg: msg.text == "المهام")
+    @bot.message_handler(func=lambda msg: msg.text and msg.text.strip() == "المهام")
     def show_tasks(message):
         user_id = message.from_user.id
         today = datetime.now().date()
 
+        print("🔥 دخلنا على المهام")  # للتأكد في اللوج
+
         conn = get_connection()
         cur = conn.cursor()
 
-        # إظهار المهام اللي المستخدم معملهاش النهارده
+        # المهام اللي المستخدم لسه معملهاش النهارده
         cur.execute("""
         SELECT id, title, reward FROM tasks
         WHERE id NOT IN (
@@ -57,6 +60,7 @@ def register_tasks(bot):
         user_id = call.from_user.id
         task_id = int(call.data.split("_")[1])
 
+        # تسجيل وقت البداية
         user_task_time[(user_id, task_id)] = time.time()
 
         conn = get_connection()
@@ -73,11 +77,12 @@ def register_tasks(bot):
         conn.close()
 
         if not task:
+            bot.answer_callback_query(call.id, "❌ المهمة غير موجودة")
             return
 
         title, desc, link, reward = task
 
-        # تصليح الرابط
+        # تصليح اللينك
         if not link.startswith("http"):
             link = "https://" + link
 
@@ -103,10 +108,12 @@ def register_tasks(bot):
         key = (user_id, task_id)
 
         if key not in user_task_time:
-            bot.answer_callback_query(call.id, "ابدأ المهمة الأول")
+            bot.answer_callback_query(call.id, "❌ ابدأ المهمة الأول")
             return
 
         elapsed = time.time() - user_task_time[key]
+
+        # حذف من الذاكرة
         del user_task_time[key]
 
         conn = get_connection()
@@ -114,7 +121,7 @@ def register_tasks(bot):
 
         today = datetime.now().date()
 
-        # تسجيل إن المهمة اتعملت النهارده (في كل الحالات)
+        # تسجيل إن المستخدم خلص المهمة (حتى لو بسرعة)
         cur.execute("""
         INSERT INTO user_tasks (user_id, task_id, date)
         VALUES (%s, %s, %s)
@@ -133,7 +140,7 @@ def register_tasks(bot):
             )
             return
 
-        # ✅ نجاح
+        # ✅ إضافة النقاط
         cur.execute("""
         UPDATE users
         SET balance = balance + (
