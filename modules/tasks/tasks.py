@@ -2,7 +2,6 @@ from database import get_connection
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
 
-# تخزين مؤقت
 user_task_time = {}
 
 def register_tasks(bot):
@@ -37,24 +36,25 @@ def register_tasks(bot):
 
             bot.send_message(
                 message.chat.id,
-                f"📢 مهمة {i} | 💰 {reward} نقطة\n"
-                f"📌 {title}",
+                f"📢 مهمة {i} | 💰 {reward} نقطة\n📌 {title}",
                 reply_markup=markup
             )
 
-    # ▶️ فتح المهمة
+    # ▶️ فتح المهمة (هنا التعديل الكبير)
     @bot.callback_query_handler(func=lambda call: call.data.startswith("start_"))
     def start_task(call):
         user_id = call.from_user.id
         task_id = int(call.data.split("_")[1])
 
-        # تسجيل وقت البداية
         user_task_time[(user_id, task_id)] = time.time()
 
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT link FROM tasks WHERE id=%s", (task_id,))
+        cur.execute("""
+        SELECT title, description, link, reward 
+        FROM tasks WHERE id=%s
+        """, (task_id,))
         task = cur.fetchone()
 
         cur.close()
@@ -64,23 +64,26 @@ def register_tasks(bot):
             bot.answer_callback_query(call.id, "❌ المهمة غير موجودة")
             return
 
-        link = task[0]
+        title, desc, link, reward = task
+
+        # 🔥 حل مشكلة اللينك
+        if not link.startswith("http"):
+            link = "https://" + link
 
         markup = InlineKeyboardMarkup()
-        markup.add(
-            InlineKeyboardButton("🔗 فتح الرابط", url=link)
-        )
-        markup.add(
-            InlineKeyboardButton("✅ تأكيد المهمة", callback_data=f"confirm_{task_id}")
-        )
+        markup.add(InlineKeyboardButton("🔗 فتح الرابط", url=link))
+        markup.add(InlineKeyboardButton("✅ تأكيد المهمة", callback_data=f"confirm_{task_id}"))
 
         bot.send_message(
             call.message.chat.id,
-            "📌 افتح الرابط وانتظر 20 ثانية ثم اضغط تأكيد",
+            f"📢 {title}\n\n"
+            f"📝 {desc}\n\n"
+            f"💰 {reward} نقطة\n\n"
+            f"📌 افتح الرابط وانتظر 20 ثانية ثم اضغط تأكيد",
             reply_markup=markup
         )
 
-    # ✅ تأكيد المهمة
+    # ✅ تأكيد (بدون حظر ولا مشاكل)
     @bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
     def confirm_task(call):
         user_id = call.from_user.id
@@ -89,29 +92,24 @@ def register_tasks(bot):
         key = (user_id, task_id)
 
         if key not in user_task_time:
-            bot.answer_callback_query(call.id, "❌ لم تبدأ المهمة")
+            bot.answer_callback_query(call.id, "❌ ابدأ المهمة الأول")
             return
 
         start_time = user_task_time[key]
         elapsed = time.time() - start_time
 
-        # حذف من الذاكرة
         del user_task_time[key]
 
-        # ❌ لو غش
+        # 👇 مجرد تنبيه مش منع
         if elapsed < 20:
             bot.send_message(
                 call.message.chat.id,
-                "❌ عدت بدري! سيتم حظر المهمة ليوم كامل"
+                "⏱ حاول تستنى شوية قبل التأكيد 😉"
             )
 
-            return
-
-        # ✅ نجاح
         conn = get_connection()
         cur = conn.cursor()
 
-        # إضافة النقاط
         cur.execute("""
         UPDATE users
         SET balance = balance + (
@@ -126,5 +124,5 @@ def register_tasks(bot):
 
         bot.send_message(
             call.message.chat.id,
-            "✅ تم تنفيذ المهمة بنجاح 💰"
+            "✅ تم إضافة النقاط بنجاح 💰"
         )
