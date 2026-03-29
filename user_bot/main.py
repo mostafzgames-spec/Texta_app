@@ -1,26 +1,30 @@
 import telebot
-import os
-import sys
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-# حل مشكلة الاستيراد من خارج المجلد
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-from init_db import create_tables
-from config import BOT_TOKEN
-
-from modules.account.account import register_account
 from modules.tasks.tasks import register_tasks
-from modules.referral.referral import register_referral
+
+BOT_TOKEN = "PUT_YOUR_TOKEN_HERE"
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# إنشاء الجداول
-create_tables()
-
-# تسجيل الموديولز
-register_account(bot)
+# تسجيل نظام المهام
 register_tasks(bot)
-register_referral(bot)
+
+# 📌 قائمة رئيسية
+@bot.message_handler(commands=['start'])
+def start(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+    btn_tasks = KeyboardButton("المهام")
+
+    markup.add(btn_tasks)
+
+    bot.send_message(
+        message.chat.id,
+        "👋 أهلاً بك",
+        reply_markup=markup
+    )
 
 print("User bot running...")
+
 bot.infinity_polling()
