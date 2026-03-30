@@ -1,10 +1,11 @@
 import sys
 import os
 
-# ✅ حل مشكلة modules (مهم جدًا)
+# ✅ حل مشكلة modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import telebot
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 from modules.tasks.tasks import register_tasks
 
@@ -20,12 +21,19 @@ bot = telebot.TeleBot(BOT_TOKEN)
 # 🔥 حل مشكلة Conflict
 bot.remove_webhook()
 
-# 📌 رسالة البداية
+# 📌 أمر /start + إظهار قائمة
 @bot.message_handler(commands=['start'])
 def start(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+    # زر المهام
+    btn_tasks = KeyboardButton("المهام")
+    markup.add(btn_tasks)
+
     bot.send_message(
         message.chat.id,
-        "👋 أهلاً بك\n\nاضغط على (المهام) لعرض المهام المتاحة 🎯"
+        "👋 أهلاً بك\n\nاختر من القائمة 👇",
+        reply_markup=markup
     )
 
 # 📌 تسجيل نظام المهام
