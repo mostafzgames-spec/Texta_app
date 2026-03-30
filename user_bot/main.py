@@ -1,44 +1,39 @@
-import sys
-import os
-
-# ✅ حل مشكلة modules
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import telebot
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton
-
+import os
 from modules.tasks.tasks import register_tasks
+from database import get_connection
 
-# ✅ التوكن من Railway
-BOT_TOKEN = os.getenv("USER_BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-if not BOT_TOKEN:
-    raise Exception("❌ USER_BOT_TOKEN مش موجود في Environment Variables")
-
-# ✅ إنشاء البوت
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 🔥 حل مشكلة Conflict
-bot.remove_webhook()
-
-# 📌 أمر /start + إظهار قائمة
+# تسجيل المستخدم
 @bot.message_handler(commands=['start'])
-def start(message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+def start(msg):
+    user_id = msg.from_user.id
 
-    # زر المهام
-    btn_tasks = KeyboardButton("المهام")
-    markup.add(btn_tasks)
+    conn = get_connection()
+    cur = conn.cursor()
 
-    bot.send_message(
-        message.chat.id,
-        "👋 أهلاً بك\n\nاختر من القائمة 👇",
-        reply_markup=markup
-    )
+    cur.execute("INSERT INTO users (user_id) VALUES (%s) ON CONFLICT DO NOTHING", (user_id,))
+    conn.commit()
 
-# 📌 تسجيل نظام المهام
+    cur.close()
+    conn.close()
+
+    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add("المهام")
+
+    bot.send_message(msg.chat.id, "👋 أهلاً بك\n👇 اختر من القائمة", reply_markup=keyboard)
+
+# زر المهام
+@bot.message_handler(func=lambda msg: msg.text == "المهام")
+def tasks_menu(msg):
+    from modules.tasks.tasks import show_tasks
+    show_tasks(bot, msg)
+
+# تسجيل نظام المهام
 register_tasks(bot)
 
-# 🚀 تشغيل البوت
-print("✅ User Bot Started...")
+print("✅ USER BOT RUNNING...")
 bot.infinity_polling()
