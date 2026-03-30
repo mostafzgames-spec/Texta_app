@@ -1,44 +1,40 @@
 from database import get_connection
 
-def create_tables():
-    conn = get_connection()
-    cur = conn.cursor()
+conn = get_connection()
+cur = conn.cursor()
 
-    # 👤 جدول المستخدمين
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        user_id BIGINT PRIMARY KEY,
-        balance INTEGER DEFAULT 0
-    )
-    """)
+# جدول المستخدمين
+cur.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT UNIQUE,
+    points INTEGER DEFAULT 0
+);
+""")
 
-    # 📢 جدول المهام
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS tasks (
-        id SERIAL PRIMARY KEY,
-        title TEXT,
-        description TEXT,
-        link TEXT,
-        reward INTEGER
-    )
-    """)
+# جدول المهام
+cur.execute("""
+CREATE TABLE IF NOT EXISTS tasks (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    link TEXT,
+    reward INTEGER
+);
+""")
 
-    # 📅 جدول تتبع المهام اليومية
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS user_tasks (
-        user_id BIGINT,
-        task_id INTEGER,
-        date DATE,
-        PRIMARY KEY (user_id, task_id, date)
-    )
-    """)
+# جدول تنفيذ المهام
+cur.execute("""
+CREATE TABLE IF NOT EXISTS user_tasks (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT,
+    task_id INTEGER,
+    date DATE
+);
+""")
 
-    conn.commit()
-    cur.close()
-    conn.close()
+conn.commit()
+cur.close()
+conn.close()
 
-    print("✅ Tables created successfully")
-
-# تشغيل الملف مباشرة
-if __name__ == "__main__":
-    create_tables()
+print("✅ DB READY")
