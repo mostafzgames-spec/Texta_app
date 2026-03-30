@@ -4,14 +4,15 @@ from database import get_connection
 import telebot
 
 user_task_time = {}
+user_task_message = {}
 
+# ================= عرض المهام =================
 def show_tasks(bot, msg):
     user_id = msg.from_user.id
 
     conn = get_connection()
     cur = conn.cursor()
 
-    # نجيب المهام اللي المستخدم معملهاش النهارده
     cur.execute("""
         SELECT * FROM tasks WHERE id NOT IN (
             SELECT task_id FROM user_tasks
@@ -48,8 +49,10 @@ def show_tasks(bot, msg):
     conn.close()
 
 
+# ================= تسجيل الأحداث =================
 def register_tasks(bot):
 
+    # ---------- فتح المهمة ----------
     @bot.callback_query_handler(func=lambda call: call.data.startswith("open_"))
     def open_task(call):
         task_id = int(call.data.split("_")[1])
@@ -60,8 +63,19 @@ def register_tasks(bot):
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT link FROM tasks WHERE id = %s", (task_id,))
-        link = cur.fetchone()[0]
+        cur.execute("SELECT name, description, link, reward FROM tasks WHERE id = %s", (task_id,))
+        task = cur.fetchone()
+
+        name, desc, link, reward = task
+
+        # 🧠 رسالة تفاصيل الإعلان (زي ما طلبت)
+        text = f"""
+📢 {name}
+
+📝 {desc}
+
+💰 {reward} نقطة
+"""
 
         keyboard = telebot.types.InlineKeyboardMarkup()
         keyboard.add(
@@ -71,15 +85,16 @@ def register_tasks(bot):
             telebot.types.InlineKeyboardButton("✅ تأكيد المهمة", callback_data=f"confirm_{task_id}")
         )
 
-        bot.send_message(call.message.chat.id,
-            "📌 افتح الرابط واستنى شوية قبل التأكيد 😉",
-            reply_markup=keyboard
-        )
+        msg = bot.send_message(call.message.chat.id, text, reply_markup=keyboard)
+
+        # نحفظ رسالة المهمة عشان نحذفها بعدين
+        user_task_message[(user_id, task_id)] = msg.message_id
 
         cur.close()
         conn.close()
 
 
+    # ---------- تأكيد المهمة ----------
     @bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
     def confirm_task(call):
         user_id = call.from_user.id
@@ -96,9 +111,18 @@ def register_tasks(bot):
         conn = get_connection()
         cur = conn.cursor()
 
+        chat_id = call.message.chat.id
+
+        # نحذف رسالة المهمة
+        if key in user_task_message:
+            try:
+                bot.delete_message(chat_id, user_task_message[key])
+            except:
+                pass
+
         # ❌ رجع بدري
         if diff < 20:
-            bot.send_message(call.message.chat.id, "❌ رجعت بدري! تم إلغاء المهمة")
+            bot.send_message(chat_id, "❌ رجعت بدري! تم إلغاء المهمة")
 
             cur.execute("""
                 INSERT INTO user_tasks (user_id, task_id, date)
@@ -108,6 +132,9 @@ def register_tasks(bot):
             conn.commit()
             cur.close()
             conn.close()
+
+            # 🔥 يرجعه للمهام
+            show_tasks(bot, call.message)
             return
 
         # ✅ نجح
@@ -126,4 +153,7 @@ def register_tasks(bot):
         cur.close()
         conn.close()
 
-        bot.send_message(call.message.chat.id, "✅ تم إضافة النقاط بنجاح 💰")
+        bot.send_message(chat_id, "✅ تم إضافة النقاط بنجاح 💰")
+
+        # 🔥 يرجعه للمهام
+        show_tasks(bot, call.message)
