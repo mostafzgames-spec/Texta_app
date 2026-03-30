@@ -5,7 +5,7 @@ import sys
 # 🔥 حل مشكلة modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from modules.tasks.tasks import register_tasks, show_tasks
+from modules.tasks.tasks import register_tasks
 from database import get_connection
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
