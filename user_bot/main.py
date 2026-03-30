@@ -1,5 +1,10 @@
-import telebot
+import sys
 import os
+
+# ✅ حل مشكلة modules (مهم جدًا)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import telebot
 
 from modules.tasks.tasks import register_tasks
 
@@ -12,7 +17,7 @@ if not BOT_TOKEN:
 # ✅ إنشاء البوت
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 🔥 حل مشكلة Conflict (مهم جدًا)
+# 🔥 حل مشكلة Conflict
 bot.remove_webhook()
 
 # 📌 رسالة البداية
@@ -20,7 +25,7 @@ bot.remove_webhook()
 def start(message):
     bot.send_message(
         message.chat.id,
-        "👋 أهلاً بك\n\nاختر من القائمة 👇"
+        "👋 أهلاً بك\n\nاضغط على (المهام) لعرض المهام المتاحة 🎯"
     )
 
 # 📌 تسجيل نظام المهام
