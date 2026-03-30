@@ -1,34 +1,31 @@
 import telebot
 import os
-import sys
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton
-
-# 🔥 الحل هنا
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from modules.tasks.tasks import register_tasks
 
+# ✅ التوكن من Railway
 BOT_TOKEN = os.getenv("USER_BOT_TOKEN")
 
+if not BOT_TOKEN:
+    raise Exception("❌ USER_BOT_TOKEN مش موجود في Environment Variables")
+
+# ✅ إنشاء البوت
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# تسجيل نظام المهام
-register_tasks(bot)
+# 🔥 حل مشكلة Conflict (مهم جدًا)
+bot.remove_webhook()
 
-# قائمة رئيسية
+# 📌 رسالة البداية
 @bot.message_handler(commands=['start'])
 def start(message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-
-    btn_tasks = KeyboardButton("المهام")
-    markup.add(btn_tasks)
-
     bot.send_message(
         message.chat.id,
-        "👋 أهلاً بك",
-        reply_markup=markup
+        "👋 أهلاً بك\n\nاختر من القائمة 👇"
     )
 
-print("User bot running...")
+# 📌 تسجيل نظام المهام
+register_tasks(bot)
 
+# 🚀 تشغيل البوت
+print("✅ User Bot Started...")
 bot.infinity_polling()
