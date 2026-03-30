@@ -1,182 +1,125 @@
-import time
-from datetime import date
+from telebot import types
 from database import get_connection
-import telebot
+import time
 
-user_task_time = {}
-user_task_message = {}
-
-# ================= عرض المهام =================
-def show_tasks(bot, msg):
-    user_id = msg.from_user.id
-
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT * FROM tasks WHERE id NOT IN (
-            SELECT task_id FROM user_tasks
-            WHERE user_id = %s AND date = %s
-        )
-    """, (user_id, date.today()))
-
-    tasks = cur.fetchall()
-
-    if not tasks:
-        bot.send_message(msg.chat.id, "❌ لا توجد مهام اليوم")
-        return
-
-    for task in tasks:
-        task_id, name, desc, link, reward = task
-
-        text = f"""
-📢 مهمة {task_id}
-💰 {reward} نقطة
-📌 {name}
-"""
-
-        keyboard = telebot.types.InlineKeyboardMarkup()
-        keyboard.add(
-            telebot.types.InlineKeyboardButton(
-                "🚀 فتح المهمة",
-                callback_data=f"open_{task_id}"
-            )
-        )
-
-        bot.send_message(msg.chat.id, text, reply_markup=keyboard)
-
-    cur.close()
-    conn.close()
-
-
-# ================= تسجيل الأحداث =================
+# تسجيل موديل المهام
 def register_tasks(bot):
 
-    # ---------- فتح المهمة ----------
-    @bot.callback_query_handler(func=lambda call: call.data.startswith("open_"))
+    # عرض المهام
+    @bot.message_handler(func=lambda message: message.text == "المهام")
+    def show_tasks(message):
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+
+            # مهم جدًا ❗❗
+            cur.execute("SELECT id, name, reward FROM tasks")
+            tasks = cur.fetchall()
+
+            if not tasks:
+                bot.send_message(message.chat.id, "لا يوجد مهام حالياً ❌")
+                return
+
+            for task in tasks:
+                task_id = task[0]
+                name = task[1]
+                reward = task[2]
+
+                text = f"📢 مهمة {task_id}\n💰 {reward} نقطة\n📌 {name}"
+
+                markup = types.InlineKeyboardMarkup()
+                btn = types.InlineKeyboardButton(
+                    "فتح المهمة 🚀",
+                    callback_data=f"open_task_{task_id}"
+                )
+                markup.add(btn)
+
+                bot.send_message(message.chat.id, text, reply_markup=markup)
+
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ في مشكلة في السيرفر\n{e}")
+
+    # فتح المهمة
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("open_task_"))
     def open_task(call):
         try:
-            bot.answer_callback_query(call.id)  # 🔥 مهم
-
-            task_id = int(call.data.split("_")[1])
-            user_id = call.from_user.id
-
-            user_task_time[(user_id, task_id)] = time.time()
+            task_id = int(call.data.split("_")[2])
 
             conn = get_connection()
             cur = conn.cursor()
 
-            cur.execute("SELECT name, description, link, reward FROM tasks WHERE id = %s", (task_id,))
+            # مهم جدًا ❗❗
+            cur.execute("SELECT id, name, description, link, reward FROM tasks WHERE id=%s", (task_id,))
             task = cur.fetchone()
 
             if not task:
-                bot.send_message(call.message.chat.id, "❌ المهمة غير موجودة")
+                bot.answer_callback_query(call.id, "المهمة غير موجودة ❌")
                 return
 
-            name, desc, link, reward = task
+            task_id, name, description, link, reward = task
 
-            text = f"""
-📢 {name}
+            text = f"""📢 {name}
 
-📝 {desc}
+📝 {description}
 
 💰 {reward} نقطة
 """
 
-            keyboard = telebot.types.InlineKeyboardMarkup()
-            keyboard.add(
-                telebot.types.InlineKeyboardButton("🔗 فتح الرابط", url=link)
+            markup = types.InlineKeyboardMarkup()
+
+            btn_link = types.InlineKeyboardButton("فتح الرابط 🔗", url=link)
+            btn_confirm = types.InlineKeyboardButton(
+                "تأكيد المهمة ✅",
+                callback_data=f"confirm_{task_id}"
             )
-            keyboard.add(
-                telebot.types.InlineKeyboardButton("✅ تأكيد المهمة", callback_data=f"confirm_{task_id}")
-            )
 
-            msg = bot.send_message(call.message.chat.id, text, reply_markup=keyboard)
+            markup.add(btn_link)
+            markup.add(btn_confirm)
 
-            user_task_message[(user_id, task_id)] = msg.message_id
+            # نسجل وقت الدخول
+            bot.user_data = getattr(bot, "user_data", {})
+            bot.user_data[call.from_user.id] = {
+                "task_id": task_id,
+                "time": time.time()
+            }
 
-            cur.close()
-            conn.close()
+            bot.send_message(call.message.chat.id, text, reply_markup=markup)
 
         except Exception as e:
-            bot.send_message(call.message.chat.id, f"❌ خطأ:\n{e}")
+            bot.send_message(call.message.chat.id, f"❌ خطأ\n{e}")
 
-
-    # ---------- تأكيد المهمة ----------
+    # تأكيد المهمة
     @bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
     def confirm_task(call):
         try:
-            bot.answer_callback_query(call.id)  # 🔥 مهم
-
             user_id = call.from_user.id
             task_id = int(call.data.split("_")[1])
 
-            key = (user_id, task_id)
-
-            if key not in user_task_time:
-                bot.send_message(call.message.chat.id, "❌ افتح المهمة الأول")
+            if not hasattr(bot, "user_data") or user_id not in bot.user_data:
+                bot.answer_callback_query(call.id, "ابدأ المهمة الأول ❌")
                 return
 
-            diff = time.time() - user_task_time[key]
+            start_time = bot.user_data[user_id]["time"]
+            now = time.time()
+
+            # لو رجع بدري
+            if now - start_time < 20:
+                bot.send_message(call.message.chat.id, "❌ رجعت بدري! تم إلغاء المهمة")
+                return
 
             conn = get_connection()
             cur = conn.cursor()
 
-            chat_id = call.message.chat.id
+            # نجيب المكافأة
+            cur.execute("SELECT reward FROM tasks WHERE id=%s", (task_id,))
+            reward = cur.fetchone()[0]
 
-            # 🧹 حذف رسالة المهمة
-            if key in user_task_message:
-                try:
-                    bot.delete_message(chat_id, user_task_message[key])
-                except:
-                    pass
-
-            # ❌ رجع بدري
-            if diff < 20:
-                bot.send_message(chat_id, "❌ رجعت بدري! تم إلغاء المهمة")
-
-                cur.execute("""
-                    INSERT INTO user_tasks (user_id, task_id, date)
-                    VALUES (%s, %s, %s)
-                """, (user_id, task_id, date.today()))
-
-                conn.commit()
-                cur.close()
-                conn.close()
-
-                # 🔥 رجوع للقائمة
-                show_tasks(bot, call.message)
-                return
-
-            # ✅ نجح
-            cur.execute("SELECT reward FROM tasks WHERE id = %s", (task_id,))
-            result = cur.fetchone()
-
-            if not result:
-                bot.send_message(chat_id, "❌ المهمة غير موجودة")
-                return
-
-            reward = result[0]
-
-            cur.execute("""
-                UPDATE users 
-                SET points = COALESCE(points,0) + %s 
-                WHERE user_id = %s
-            """, (reward, user_id))
-
-            cur.execute("""
-                INSERT INTO user_tasks (user_id, task_id, date)
-                VALUES (%s, %s, %s)
-            """, (user_id, task_id, date.today()))
+            # نضيف نقاط
+            cur.execute("UPDATE users SET points = points + %s WHERE user_id=%s", (reward, user_id))
 
             conn.commit()
-            cur.close()
-            conn.close()
 
-            bot.send_message(chat_id, "✅ تم إضافة النقاط بنجاح 💰")
-
-            # 🔥 رجوع للقائمة
-            show_tasks(bot, call.message)
+            bot.send_message(call.message.chat.id, f"✅ تم إضافة {reward} نقطة")
 
         except Exception as e:
-            bot.send_message(call.message.chat.id, f"❌ خطأ:\n{e}")
+            bot.send_message(call.message.chat.id, f"❌ خطأ\n{e}")
