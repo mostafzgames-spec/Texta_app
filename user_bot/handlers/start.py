@@ -1,12 +1,13 @@
 from aiogram import Router
 from aiogram.types import Message
+from aiogram.filters import CommandStart
 from shared.database.connection import SessionLocal
 from user_bot.db.user_model import User
 from sqlalchemy import select
 
 router = Router()
 
-@router.message()
+@router.message(CommandStart())
 async def start_handler(message: Message):
     async with SessionLocal() as session:
         result = await session.execute(
