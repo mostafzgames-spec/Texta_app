@@ -2,7 +2,6 @@ import asyncio
 import os
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
-from aiogram.filters import Command
 
 from user_bot.handlers.start import router
 from shared.database.connection import engine
@@ -20,8 +19,8 @@ async def main():
     # ربط الهاندلر
     dp.include_router(router)
 
-    # fallback (بس مش للأوامر)
-    @dp.message(~Command())
+    # fallback بسيط (مش بيأثر على start)
+    @dp.message()
     async def echo(message: Message):
         print("Message received:", message.text)
         await message.answer("📩 وصلني كلامك")
