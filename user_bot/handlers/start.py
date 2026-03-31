@@ -1,10 +1,9 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.types import Message
 
 router = Router()
 
-@router.message()
+@router.message(F.text == "/start")
 async def start_handler(message: Message):
-    if message.text == "/start":
-        print("Start triggered")
-        await message.answer("👋 أهلاً بيك في بوت Mafhumatk")
+    print("Start command received")
+    await message.answer("👋 أهلاً بيك في بوت Mafhumatk")
