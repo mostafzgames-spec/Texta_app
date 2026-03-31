@@ -16,12 +16,14 @@ async def main():
     # حذف webhook
     await bot.delete_webhook(drop_pending_updates=True)
 
-    # ربط الهاندلر
+    # مهم: ضيف الراوتر الأول
     dp.include_router(router)
 
-    # fallback بسيط (مش بيأثر على start)
+    # fallback (أي حاجة مش /start)
     @dp.message()
     async def echo(message: Message):
+        if message.text == "/start":
+            return
         print("Message received:", message.text)
         await message.answer("📩 وصلني كلامك")
 
