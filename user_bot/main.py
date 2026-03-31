@@ -2,7 +2,8 @@ import asyncio
 import os
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
-from aiogram.filters import CommandStart
+
+from user_bot.handlers.start import router
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -10,13 +11,10 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # Start command
-    @dp.message(CommandStart())
-    async def start_handler(message: Message):
-        print("User pressed start")
-        await message.answer("👋 أهلاً بيك في بوت Mafhumatk")
+    # ربط الهاندلر
+    dp.include_router(router)
 
-    # Test أي رسالة
+    # fallback لأي رسالة
     @dp.message()
     async def echo(message: Message):
         print("Message received:", message.text)
