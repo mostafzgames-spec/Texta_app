@@ -2,7 +2,7 @@ import asyncio
 import os
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
-from aiogram.filters import CommandStart
+from aiogram.filters import Command
 
 from user_bot.handlers.start import router
 from shared.database.connection import engine
@@ -14,14 +14,14 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # حذف أي webhook (مهم جداً)
+    # حذف webhook
     await bot.delete_webhook(drop_pending_updates=True)
 
     # ربط الهاندلر
     dp.include_router(router)
 
-    # fallback
-    @dp.message()
+    # fallback (بس مش للأوامر)
+    @dp.message(~Command())
     async def echo(message: Message):
         print("Message received:", message.text)
         await message.answer("📩 وصلني كلامك")
@@ -32,7 +32,6 @@ async def main():
 
     print("Bot is running...")
 
-    # تشغيل polling
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
