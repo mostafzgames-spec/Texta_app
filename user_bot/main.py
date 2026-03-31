@@ -14,14 +14,15 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # ربط الهاندلر الأساسي
+    # حذف أي webhook (مهم جداً)
+    await bot.delete_webhook(drop_pending_updates=True)
+
+    # ربط الهاندلر
     dp.include_router(router)
 
-    # fallback لأي رسالة (بس مش /start)
+    # fallback
     @dp.message()
     async def echo(message: Message):
-        if message.text.startswith("/start"):
-            return
         print("Message received:", message.text)
         await message.answer("📩 وصلني كلامك")
 
@@ -31,7 +32,7 @@ async def main():
 
     print("Bot is running...")
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    # تشغيل polling
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
