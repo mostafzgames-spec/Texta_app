@@ -2,6 +2,7 @@ import asyncio
 import os
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
+from aiogram.filters import CommandStart
 
 from user_bot.handlers.start import router
 from shared.database.connection import engine
@@ -13,12 +14,14 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # ربط الهاندلر
+    # ربط الهاندلر الأساسي
     dp.include_router(router)
 
-    # fallback لأي رسالة
+    # fallback لأي رسالة (بس مش /start)
     @dp.message()
     async def echo(message: Message):
+        if message.text.startswith("/start"):
+            return
         print("Message received:", message.text)
         await message.answer("📩 وصلني كلامك")
 
