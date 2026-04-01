@@ -1,6 +1,6 @@
 import asyncio
 import os
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from sqlalchemy import select
 
@@ -17,20 +17,20 @@ async def main():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    # مهم جداً
     await bot.delete_webhook(drop_pending_updates=True)
 
-    @dp.message()
-    async def handler(message: Message):
+    # /start
+    @dp.message(F.text == "/start")
+    async def start_handler(message: Message):
         async with SessionLocal() as session:
             telegram_id = message.from_user.id
 
-            # هل المستخدم موجود؟
             result = await session.execute(
                 select(User).where(User.telegram_id == telegram_id)
             )
             user = result.scalar_one_or_none()
 
-            # لو مش موجود → نسجله
             if not user:
                 new_user = User(telegram_id=telegram_id)
                 session.add(new_user)
@@ -39,12 +39,12 @@ async def main():
                 await message.answer("👋 أهلاً بيك، تم تسجيلك!")
                 return
 
-            # لو موجود
-            if message.text == "/start":
-                await message.answer(f"👋 رجعت تاني\n💰 رصيدك: {user.balance}")
+            await message.answer(f"👋 رجعت تاني\n💰 رصيدك: {user.balance}")
 
-            else:
-                await message.answer("📩 شغال تمام")
+    # أي رسالة تانية
+    @dp.message()
+    async def echo(message: Message):
+        await message.answer("📩 وصلي كلامك")
 
     print("User bot running...")
 
