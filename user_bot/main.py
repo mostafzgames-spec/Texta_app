@@ -3,33 +3,25 @@ import os
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
 
-from user_bot.handlers.start import router
-from shared.database.connection import engine
-from user_bot.db.base import Base
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 async def main():
+    print("Bot starting...")
+
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # حذف webhook
+    # مهم جداً
     await bot.delete_webhook(drop_pending_updates=True)
 
-    # مهم: ضيف الراوتر الأول
-    dp.include_router(router)
-
-    # fallback (أي حاجة مش /start)
     @dp.message()
-    async def echo(message: Message):
-        if message.text == "/start":
-            return
-        print("Message received:", message.text)
-        await message.answer("📩 وصلني كلامك")
+    async def all_messages(message: Message):
+        print("وصلت رسالة:", message.text)
 
-    # إنشاء الجداول
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        if message.text == "/start":
+            await message.answer("👋 أهلاً بيك")
+        else:
+            await message.answer("📩 شغال تمام")
 
     print("Bot is running...")
 
