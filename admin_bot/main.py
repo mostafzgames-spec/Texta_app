@@ -1,22 +1,32 @@
-import telebot
+import asyncio
 import os
-import sys
+from aiogram import Bot, Dispatcher
+from aiogram.types import Message
 
-# مهم عشان يقرأ modules اللي بره
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
 
-from admin_bot.config import ADMIN_BOT_TOKEN
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-# استدعاء الأنظمة
-from modules.tasks.add_task import register_add_task
-from modules.broadcast import register_broadcast
+async def main():
+    bot = Bot(token=BOT_TOKEN)
+    dp = Dispatcher()
 
-bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
+    await bot.delete_webhook(drop_pending_updates=True)
 
-# تشغيل الأنظمة
-register_add_task(bot)
-register_broadcast(bot)
+    @dp.message()
+    async def handler(message: Message):
+        if message.from_user.id != ADMIN_ID:
+            return
 
-print("Admin bot running...")
+        if message.text == "/start":
+            await message.answer("🛠️ لوحة الأدمن جاهزة")
 
-bot.infinity_polling()
+        elif message.text == "ping":
+            await message.answer("🏓 admin bot شغال")
+
+    print("Admin bot running...")
+
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
